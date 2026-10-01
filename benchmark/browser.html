@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pure Embed browser benchmark</title>
+<style>body{font:16px system-ui;max-width:760px;margin:24px auto;padding:0 16px}button,input{font:inherit;padding:10px}pre{white-space:pre-wrap;overflow-wrap:anywhere}button{margin:12px 0}table{border-collapse:collapse;width:100%}td,th{padding:8px;text-align:left;border-bottom:1px solid #ccc}</style>
+<h1>Pure Embed browser benchmark</h1>
+<p>Runs the actual model on this browser's main thread. Keep this tab visible, disable Low Power Mode, and let the device cool before starting. No text leaves your device; only benchmark results are submitted.</p>
+<label>Device <input id="device" placeholder="iPhone 14 / laptop model"></label>
+<button id="run">Run benchmark</button>
+<pre id="status">Ready. Model loading is measured separately; throughput includes tokenization, lookup, pooling, normalization, and output allocation.</pre>
+<div id="table"></div><pre id="output"></pre>
+<script type="module">
+import { load } from '../src/index.js';
+const button = document.querySelector('#run');
+const status = document.querySelector('#status');
+const output = document.querySelector('#output');
+const cases = [
+  { name: 'Short', text: 'Fast local text search works well.' },
+  { name: 'Medium', text: "A small static embedding model turns this sentence into a useful vector directly on the user's device." },
+  { name: 'Long', text: Array(10).fill('A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service.').join(' ') }
+];
+const pause = () => new Promise(resolve => setTimeout(resolve, 40));
+const median = values => [...values].sort((a,b) => a-b)[Math.floor(values.length/2)];
+let hidden = false;
+document.addEventListener('visibilitychange', () => { if (document.hidden) hidden = true; });
+button.onclick = async () => {
+  button.disabled = true; hidden = document.hidden; output.textContent = ''; document.querySelector('#table').textContent = '';
+  let checksum = 0;
+  try {
+    status.textContent = 'Downloading and loading real model…';
+    const started = performance.now();
+    const model = await load();
+    const loadMs = performance.now() - started;
+    const vector = model.embed('Fast local text search works well.');
+    const norm = Math.sqrt(vector.reduce((s,v) => s+v*v, 0));
+    if (vector.length !== 256 || Math.abs(norm - 1) > 0.001) throw Error('Model output validation failed');
+    const results = [];
+    for (const item of cases) {
+      status.textContent = `${item.name}: warming up…`;
+      await pause();
+      const warmStart = performance.now();
+      do { checksum += model.embed(item.text)[0]; } while (performance.now() - warmStart < 300);
+      // Calibrate a timed batch to ~250ms, avoiding timer-resolution artifacts.
+      let iterations = 32, elapsed;
+      do {
+        const start = performance.now();
+        for (let i=0; i<iterations; i++) checksum += model.embed(item.text)[0];
+        elapsed = performance.now() - start;
+        if (elapsed < 100) iterations *= 2;
+      } while (elapsed < 100);
+      iterations = Math.max(1, Math.round(iterations * 250 / elapsed));
+      const samples = [];
+      for (let round=0; round<5; round++) {
+        status.textContent = `${item.name}: measured round ${round+1}/5…`;
+        await pause();
+        const start = performance.now();
+        for (let i=0; i<iterations; i++) checksum += model.embed(item.text)[0];
+        samples.push(performance.now() - start);
+        if (hidden) throw Error('Tab became hidden. Keep it visible and run again.');
+      }
+      const medianMs = median(samples);
+      results.push({name:item.name, text:item.text, words:item.text.split(/\s+/).length, characters:item.text.length, iterations, rounds:5, samplesMs:samples, medianMs, embeddingsPerSecond:iterations*1000/medianMs, microsecondsPerEmbedding:medianMs*1000/iterations});
+    }
+    const result = { timestamp:new Date().toISOString(), device:document.querySelector('#device').value || 'Unspecified', userAgent:navigator.userAgent, hardwareConcurrency:navigator.hardwareConcurrency, deviceMemoryGB:navigator.deviceMemory ?? null, loadMs, dimensions:model.dimensions, modelRows:model.rows, maxLength:model.maxLength, checksum, validation:{norm, dimensions:vector.length}, methodology:'Main-thread synchronous embed(), identical repeated input per case, 300ms warmup per case, calibrated ~250ms batches, median of 5 rounds; load excluded from throughput. Long input is 280 words; WordPiece count not measured.', cases:results };
+    output.textContent = JSON.stringify(result, null, 2);
+    const table = document.createElement('table');
+    table.innerHTML = '<tr><th>Input</th><th>Embeddings/sec</th><th>µs/embedding</th></tr>';
+    for (const r of results) { const row=table.insertRow(); for (const v of [r.name,Math.round(r.embeddingsPerSecond).toLocaleString(),r.microsecondsPerEmbedding.toFixed(1)]) row.insertCell().textContent=v; }
+    document.querySelector('#table').append(table);
+    status.textContent = `Finished. Model load: ${(loadMs/1000).toFixed(2)}s (cache state not controlled). Sending results…`;
+    const response = await fetch('/results', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});
+    if (!response.ok) throw Error(`Result submission failed: HTTP ${response.status}. Copy the JSON below.`);
+    const receipt = await response.json();
+    status.textContent = `Saved here automatically (${receipt.file}). Model load: ${(loadMs/1000).toFixed(2)}s. You can now run this on the other device.`;
+  } catch(error) { status.textContent = error.message; }
+  finally { button.disabled = false; }
+};
+</script>
+</html>

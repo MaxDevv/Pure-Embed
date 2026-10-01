@@ -1,0 +1,73 @@
+{
+  "timestamp": "2026-10-01T11:40:36.933Z",
+  "device": "iPhone 14",
+  "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.1 Mobile/15E148 Safari/604.1",
+  "hardwareConcurrency": 4,
+  "deviceMemoryGB": null,
+  "loadMs": 2080,
+  "dimensions": 256,
+  "modelRows": 29525,
+  "maxLength": 512,
+  "checksum": -23146.881610028446,
+  "validation": {
+    "norm": 1.0000000020803783,
+    "dimensions": 256
+  },
+  "methodology": "Main-thread synchronous embed(), identical repeated input per case, 300ms warmup per case, calibrated ~250ms batches, median of 5 rounds; load excluded from throughput. Long input is 280 words; WordPiece count not measured.",
+  "cases": [
+    {
+      "name": "Short",
+      "text": "Fast local text search works well.",
+      "words": 6,
+      "characters": 34,
+      "iterations": 43344,
+      "rounds": 5,
+      "samplesMs": [
+        246,
+        251,
+        250,
+        259,
+        257
+      ],
+      "medianMs": 251,
+      "embeddingsPerSecond": 172685.25896414343,
+      "microsecondsPerEmbedding": 5.790882244370616
+    },
+    {
+      "name": "Medium",
+      "text": "A small static embedding model turns this sentence into a useful vector directly on the user's device.",
+      "words": 17,
+      "characters": 102,
+      "iterations": 13213,
+      "rounds": 5,
+      "samplesMs": [
+        249,
+        242,
+        241,
+        241,
+        238.99999999999818
+      ],
+      "medianMs": 241,
+      "embeddingsPerSecond": 54825.72614107884,
+      "microsecondsPerEmbedding": 18.239612502838114
+    },
+    {
+      "name": "Long",
+      "text": "A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service. A static embedding model uses a compact vocabulary lookup table to quickly represent text as a normalized semantic vector without a neural network or a remote inference service.",
+      "words": 280,
+      "characters": 1779,
+      "iterations": 848,
+      "rounds": 5,
+      "samplesMs": [
+        244,
+        246,
+        247,
+        247,
+        243.99999999999818
+      ],
+      "medianMs": 246,
+      "embeddingsPerSecond": 3447.1544715447153,
+      "microsecondsPerEmbedding": 290.0943396226415
+    }
+  ]
+}

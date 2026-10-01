@@ -1,0 +1,12 @@
+{
+  "name": "pure-embed",
+  "version": "1.0.0",
+  "description": "Fast, dependency-free browser embeddings with Potion 256D Compact v3",
+  "type": "module",
+  "exports": "./src/index.js",
+  "scripts": {
+    "test": "node --test",
+    "benchmark": "node benchmark/bench.js"
+  },
+  "license": "MIT"
+}
